@@ -69,6 +69,20 @@ for core in "${RUST_LIB_DIR:?}"/*.dylib; do
     embedded_a_core=1
 done
 
+# Cores built from another repository bring their own default options, named
+# for the core (see build-rust.sh and CoreKind.defaultOptionsFileName).
+RESOURCES="${TARGET_BUILD_DIR:?}/${UNLOCALIZED_RESOURCES_FOLDER_PATH:?}"
+for options in "$RUST_LIB_DIR"/touchHLE_default_options.*.txt; do
+    [ -f "$options" ] || continue
+    cp -f "$options" "$RESOURCES/"
+    echo "Embedded $(basename "$options")"
+done
+for core_resources in "$RUST_LIB_DIR"/*_resources; do
+    [ -d "$core_resources" ] || continue
+    rsync -a --delete "$core_resources/" "$RESOURCES/$(basename "$core_resources")/"
+    echo "Embedded $(basename "$core_resources")"
+done
+
 if [ "$embedded_a_core" = 0 ]; then
     echo "error: no core dylib found in $RUST_LIB_DIR. Run build-rust.sh first." >&2
     exit 1

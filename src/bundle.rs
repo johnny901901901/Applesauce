@@ -429,6 +429,15 @@ impl Bundle {
             .map(|v| v.as_string().unwrap())
     }
 
+    /// Whether the app declares its orientation at all. Pre-3.2 apps often
+    /// declare none and rotate themselves in code (Crash Bandicoot Nitro Kart
+    /// 2 does), so [Self::supported_interface_orientations]'s portrait default
+    /// says nothing about how they render.
+    pub fn declares_interface_orientation(&self) -> bool {
+        self.plist.contains_key("UISupportedInterfaceOrientations")
+            || self.plist.contains_key("UIInterfaceOrientation")
+    }
+
     pub fn supported_interface_orientations(&self) -> Vec<&str> {
         // Apple's Bundle Resources documentation
         // (https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedinterfaceorientations)

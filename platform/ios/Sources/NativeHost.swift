@@ -1134,7 +1134,8 @@ private struct GameCard: View {
     @AppStorage("defaultCore") private var defaultCoreRaw = ""
 
     private var defaultCore: CoreKind {
-        CoreSelection.kind(forStoredDefault: defaultCoreRaw)
+        CoreKind.preferred(forBundleIdentifier: game.bundleIdentifier)
+            ?? CoreSelection.kind(forStoredDefault: defaultCoreRaw)
     }
 
     private var core: CoreKind {
@@ -1235,7 +1236,8 @@ private struct SettingsView: View {
             Form {
                 if CoreKind.installed.count > 1 {
                     Section {
-                        ForEach(CoreKind.installed) { kind in
+                        // codwawzpc runs one game, so it can't be everyone's default.
+                        ForEach(CoreKind.installed.filter { $0 != .codwawzpc }) { kind in
                             CoreChoiceRow(kind: kind, isSelected: kind == defaultCore) {
                                 defaultCoreRaw = kind.rawValue
                             }

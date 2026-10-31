@@ -22,6 +22,12 @@ View options:
         and it will automatically rotate the window, but some apps neglect to
         do this. These options may be useful in that case.
 
+    --force-orientation=...
+        Always give the app this orientation (portrait, upside-down,
+        landscape-left or landscape-right), overriding the options above and
+        the host's choice. For apps that draw for one landscape side only: the
+        window can then be shown on either side and the app stays upright.
+
     --scale-hack=...
         Set a scaling factor for the window. touchHLE will attempt to run the
         app with an increased internal resolution. This is a hack and there's

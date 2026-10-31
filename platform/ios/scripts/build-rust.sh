@@ -44,7 +44,12 @@ CMAKE="$ROOT/scripts/cmake-ios.sh"
 DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}
 IPHONEOS_DEPLOYMENT_TARGET=15.0
 CFLAGS="${CFLAGS:-} -ffile-prefix-map=$HOME=/build -fdebug-prefix-map=$HOME=/build"
-CXXFLAGS="${CXXFLAGS:-} -DFMT_CONSTEVAL= -ffile-prefix-map=$HOME=/build -fdebug-prefix-map=$HOME=/build"
+CXXFLAGS="${CXXFLAGS:-} -ffile-prefix-map=$HOME=/build -fdebug-prefix-map=$HOME=/build"
+# This repository's fmt needs consteval disabled. Other cores may carry a newer
+# Dynarmic whose mcl rejects redefining the macro, so they build as they are.
+if [ "$CORE_REPO" = "$REPO" ]; then
+    CXXFLAGS="$CXXFLAGS -DFMT_CONSTEVAL="
+fi
 
 # The core is a dylib that links against the shared SDL2 embedded in the app
 # bundle (see build-sdl-shared.sh), not against a private static copy.
@@ -170,4 +175,21 @@ if [ "$CORE_REPO" != "$REPO" ]; then
     mkdir -p "$HOST_OUT_DIR"
     cp -f "$CORE_OUT_DIR/$CORE_DYLIB" "$HOST_OUT_DIR/"
     echo "Copied $CORE_DYLIB into $HOST_OUT_DIR"
+    # Its default options go beside it, named for the core, e.g.
+    # touchHLE_default_options.codwawzpc.txt for libcodwawzpc_core.dylib.
+    core_name=${CORE_LIB_NAME%_core}
+    if [ -f "$CORE_REPO/touchHLE_default_options.txt" ] && [ "$core_name" != touchhle ]; then
+        cp -f "$CORE_REPO/touchHLE_default_options.txt" \
+            "$HOST_OUT_DIR/touchHLE_default_options.$core_name.txt"
+        # The core's own dylibs and fonts, which may differ from this
+        # repository's, go in a folder of their own: <core>_resources.
+        core_resources="$HOST_OUT_DIR/${core_name}_resources"
+        mkdir -p "$core_resources"
+        for item in touchHLE_dylibs touchHLE_fonts; do
+            rsync -a --delete "$CORE_REPO/$item/" "$core_resources/$item/"
+        done
+        cp -f "$CORE_REPO/touchHLE_default_options.txt" "$core_resources/"
+        cp -f "$CORE_REPO/touchHLE_default_options.txt" \
+            "$core_resources/touchHLE_default_options.$core_name.txt"
+    fi
 fi

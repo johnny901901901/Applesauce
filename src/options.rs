@@ -43,6 +43,10 @@ pub struct Options {
     /// `--screen-size=WxH` override below.
     pub host_screen_size: Option<(u32, u32)>,
     pub initial_orientation: DeviceOrientation,
+    /// An orientation the app always gets, whichever way the host shows it.
+    /// Some apps draw for one landscape side only; this lets the host window
+    /// use the other side and still show them upright.
+    pub forced_orientation: Option<DeviceOrientation>,
     /// Override the rotation applied when presenting the guest's renderbuffer,
     /// in degrees counter-clockwise (0, 90, 180 or 270). `None` means derive it
     /// from [Self::initial_orientation], which is the normal behaviour.
@@ -140,6 +144,7 @@ impl Default for Options {
             host_screen_size: None,
             initial_orientation: DeviceOrientation::Portrait,
             present_rotation_override: None,
+            forced_orientation: None,
             ios_es2_direct_present: false,
             scale_hack: NonZeroU32::new(1).unwrap(),
             analog_stick_tilt_controls: true,
@@ -197,6 +202,18 @@ impl Options {
             self.initial_orientation = DeviceOrientation::LandscapeRight;
         } else if arg == "--upside-down" {
             self.initial_orientation = DeviceOrientation::PortraitUpsideDown;
+        } else if let Some(value) = arg.strip_prefix("--force-orientation=") {
+            self.forced_orientation = Some(match value {
+                "portrait" => DeviceOrientation::Portrait,
+                "upside-down" => DeviceOrientation::PortraitUpsideDown,
+                "landscape-left" => DeviceOrientation::LandscapeLeft,
+                "landscape-right" => DeviceOrientation::LandscapeRight,
+                _ => {
+                    return Err("--force-orientation= must be portrait, upside-down, \
+                                landscape-left or landscape-right"
+                        .to_string())
+                }
+            });
         } else if arg == "--ios-es2-direct-present" {
             self.ios_es2_direct_present = true;
         } else if arg == "--no-ios-es2-direct-present" {

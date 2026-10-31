@@ -9,6 +9,7 @@ import Foundation
 enum CoreKind: String, CaseIterable, Identifiable {
     case hyperHLE = "hyperhle"
     case touchHLE = "touchhle"
+    case codwawzpc = "codwawzpc"
 
     var id: String { rawValue }
 
@@ -16,6 +17,7 @@ enum CoreKind: String, CaseIterable, Identifiable {
         switch self {
         case .hyperHLE: return "HyperHLE"
         case .touchHLE: return "touchHLE"
+        case .codwawzpc: return "codwawzpc"
         }
     }
 
@@ -23,6 +25,7 @@ enum CoreKind: String, CaseIterable, Identifiable {
         switch self {
         case .hyperHLE: return "v1.0.6"
         case .touchHLE: return "0.2.3"
+        case .codwawzpc: return "0.3.0"
         }
     }
 
@@ -32,6 +35,8 @@ enum CoreKind: String, CaseIterable, Identifiable {
             return "A fork of touchHLE that runs more games."
         case .touchHLE:
             return "The original emulator. Worth trying if a game misbehaves on HyperHLE."
+        case .codwawzpc:
+            return "Call of Duty: Zombies 1.5.0 only, with controller support."
         }
     }
 
@@ -42,6 +47,7 @@ enum CoreKind: String, CaseIterable, Identifiable {
         switch self {
         case .hyperHLE: return "touchHLE_default_options.txt"
         case .touchHLE: return "touchHLE_default_options.touchhle.txt"
+        case .codwawzpc: return "touchHLE_default_options.codwawzpc.txt"
         }
     }
 
@@ -58,6 +64,15 @@ enum CoreKind: String, CaseIterable, Identifiable {
 
     /// The cores this build actually shipped, in menu order.
     static var installed: [CoreKind] { allCases.filter(\.isAvailable) }
+
+    /// The core a game uses unless the user picked one: codwawzpc for the game
+    /// it was built for.
+    static func preferred(forBundleIdentifier bundleIdentifier: String?) -> CoreKind? {
+        if bundleIdentifier == "com.activision.callofduty", codwawzpc.isAvailable {
+            return .codwawzpc
+        }
+        return nil
+    }
 }
 
 /// A loaded core dylib and the entry points looked up inside it.
@@ -187,7 +202,7 @@ enum CoreSelection {
               let kind = CoreKind(rawValue: stored),
               kind.isAvailable
         else {
-            return defaultKind
+            return CoreKind.preferred(forBundleIdentifier: bundleIdentifier) ?? defaultKind
         }
         return kind
     }

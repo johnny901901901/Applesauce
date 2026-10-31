@@ -118,8 +118,11 @@ pub fn inspect_host_app(path: &std::path::Path) -> Result<HostAppMetadata, Strin
     let supports_landscape = supported_orientations
         .iter()
         .any(|orientation| orientation.contains("Landscape"));
-    let orientation_capabilities =
-        u32::from(supports_portrait) | (u32::from(supports_landscape) << 1);
+    // An app that declares no orientation may rotate itself, so let the
+    // host's orientation setting decide rather than assuming portrait.
+    let declared = bundle.declares_interface_orientation();
+    let orientation_capabilities = u32::from(supports_portrait || !declared)
+        | (u32::from(supports_landscape || !declared) << 1);
     let (icon_rgba, icon_width, icon_height) = match bundle.load_icon(&fs) {
         Ok(icon) => {
             let (width, height) = icon.dimensions();
@@ -489,6 +492,10 @@ pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
     for option_arg in option_args {
         let parse_result = options.parse_argument(&option_arg);
         assert!(parse_result == Ok(true));
+    }
+    // Applied last, so it holds even when the host asks for an orientation.
+    if let Some(orientation) = options.forced_orientation {
+        options.initial_orientation = orientation;
     }
 
     let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
